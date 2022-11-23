@@ -1,13 +1,26 @@
 #include <stdio.h>
+#include <sys/wait.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 
 int main(int argc, char *argv[])
 {
     pid_t pid;
-    for (int i = 1; i <= argc; i++)
+    char *args[argc + 1];
+    args[0] = "zip";
+    args[1] = "ebooks.zip";
+
+    for (int i = 1; i < argc; i++)
     {
+        char *argumentCopy = (char *)malloc(strlen(argv[i]) + 1);
+        strcpy(argumentCopy, argv[i]);
+
+        char *fileNameTxt = argv[i];
+        char *fileNameEpub = strtok(argumentCopy, ".");
+        strcat(fileNameEpub, ".epub"); // Add .epub
+
         if ((pid = fork()) < 0)
         {
             perror("fork error");
@@ -15,25 +28,25 @@ int main(int argc, char *argv[])
         }
         else if (pid == 0)
         {
-            char buffer[255];
-            char *test = strtok(argv[i], ".");
-            sprintf(buffer, "pandoc %s.txt -o %s.epub", argv[i], test);
-            system(buffer);
-            printf("[%d] converting %s", getppid(), argv[i]);
+            char *pandocArgs[] = {"pandoc", fileNameTxt, "-o", fileNameEpub, NULL};
+            printf("[%d] converting %s\n", getppid(), fileNameTxt);
+            execvp("pandoc", pandocArgs);
         }
         else if (pid > 0)
         {
-            wait();
-            char *args;
-            char buffer[255];
-            for (int i = 1; i <= argc; i++)
+            int status;
+            if (wait(&status) < 0)
             {
-                char* clean = strtok(argv[i], ".");
-                strcat(args, strcat(clean, ".epub"));
+                fprintf(stderr, "Cannot wait for child: %s\n", strerror(errno));
             }
-            sprintf(buffer, "zip ebooks.zip ", args);
-            system(buffer);
+            args[i + 1] = fileNameEpub;
         }
     }
-    return EXIT_SUCCESS;
+
+    if (pid > 0)
+    {
+        args[argc + 1] = '\0';
+        execvp("zip", args);
+    }
+    exit(EXIT_SUCCESS);
 }
