@@ -23,7 +23,7 @@
                 "${fileDirname}/${fileBasenameNoExtension}"
             ],
             "options": {
-                "cwd": "${fileDirname}"
+                "cwd": "/bin"
             },
             "problemMatcher": [
                 "$gcc"
