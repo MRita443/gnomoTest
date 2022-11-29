@@ -29,9 +29,6 @@ int main(int argc, char* argv[]){
             fseek (f, pos, SEEK_SET);
             char* buffer = malloc(n);
             fread(buffer,1,n,f);
-            /*printf(">");
-            write(STDOUT_FILENO, buffer, n);
-            printf("<\n");*/
             printf(">%s<\n",buffer);
         }
         fclose(f);

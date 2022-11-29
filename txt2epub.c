@@ -45,7 +45,12 @@ int main(int argc, char *argv[])
 
     if (pid > 0)
     {
-        args[argc + 1] = '\0';
+        args[argc + 1] = "\0";
+        // Exemplo de validação
+        if (execvp("zip", args) == -1) { 
+            perror("execvp"); 
+            return EXIT_FAILURE;
+        }
         execvp("zip", args);
     }
     exit(EXIT_SUCCESS);
