@@ -54,8 +54,7 @@ int main(int argc, char *argv[])
 			printf("Unable to create a fifo; errno=%d\n", errno);
 			return EXIT_FAILURE;
 		}
-		else
-		{
+		else{
 			pipes[i] = pipeName;
 		}
 	}
