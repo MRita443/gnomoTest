@@ -7,9 +7,8 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 
-int main(int argc, char *argv[])
-{
-	
+int main(int argc, char *argv[]){
+
 	int numberProcesses = atoi(argv[1]);
 	float blockProb = atof(argv[2]);
 	unsigned sleepTime = atoi(argv[3]);
@@ -20,18 +19,15 @@ int main(int argc, char *argv[])
 	int fd;
 	int fileDescriptor;
 
-	for (int i = 0; i < numberProcesses - 1; i++)
-	{
+	for (int i = 0; i < numberProcesses - 1; i++){
 		char* pipeName;
 		sprintf(pipeName, "pipe%dto%d", i + 1, i + 2);
 
-		if (mkfifo(pipeName, 0666) != 0)
-		{
+		if (mkfifo(pipeName, 0666) != 0){
 			printf("Unable to create a fifo; errno=%d\n", errno);
 			return EXIT_FAILURE;
 		}
-		else
-		{
+		else{
 			pipes[i] = pipeName;
 		}
 	}
@@ -39,29 +35,24 @@ int main(int argc, char *argv[])
 	char* lastPipeName;
 	sprintf("pipe%dto%d", numberProcesses, 1);
 
-	if (mkfifo(lastPipeName, 0666) != 0)
-	{
+	if (mkfifo(lastPipeName, 0666) != 0){
 		printf("Unable to create a fifo; errno=%d\n", errno);
 		return EXIT_FAILURE;
 	}
-	else
-	{
+	else{
 		pipes[numberProcesses - 1] = lastPipeName; //Adiciona o último pipe criado à lista de pipes
 	}
 
-	if ((pid = fork()) < 0)
-	{
+	if ((pid = fork()) < 0){
 		perror("fork error");
 		exit(EXIT_FAILURE);
 	}
-	else if (pid > 0)
-	{
+	else if (pid > 0){
 		fd = open(pipes[currentPipe], O_WRONLY);
 		write(fd, token, sizeof(int));
 		close(fd);
 	}
-	else if (pid == 0)
-	{
+	else if (pid == 0){
 		fd = open(pipes[currentPipe++], O_RDONLY);
 		currentPipe %= numberProcesses; //No caso, de o já ter sido utilizado o último pipe, voltar ao primeiro
 		read(fd, token, sizeof(int));
