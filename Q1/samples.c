@@ -18,7 +18,7 @@ long getSize(FILE* f){
 
 int main(int argc, char* argv[]){
     if (argc != 4){
-        printf("Insert the correct number of arguments. samples <file name> <number of fragments> <size per fragment>");
+        printf("Insert the correct number of arguments. samples <file name> <number of fragments> <size per fragment>\n");
         return EXIT_SUCCESS;
     }
     FILE* f = fopen(argv[1], "r");

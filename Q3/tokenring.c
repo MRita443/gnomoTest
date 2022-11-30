@@ -9,9 +9,9 @@
 
 int main(int argc, char *argv[]){
 
-	int numberProcesses = atoi(argv[1]);
-	float blockProb = atof(argv[2]);
-	unsigned sleepTime = atoi(argv[3]);
+	int numberProcesses = 5;
+	float blockProb = 1;
+	unsigned sleepTime = 5;
 	char *pipes[numberProcesses];
 	int token = 0;
 	int currentPipe = 0;
