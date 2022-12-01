@@ -5,7 +5,7 @@
 
 /*
 argv[1] -> texto
-argv[2] -> nÃºmero de fragmentos
+argv[2] -> número de fragmentos
 argv[3] -> tamanho dos fragmentos 
 */
 

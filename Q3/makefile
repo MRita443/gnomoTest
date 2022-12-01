@@ -6,11 +6,10 @@ CXX=gcc
 # and treat all warnings as errors
 CXXFLAGS=-Wall
 
-Pipes= $(pipe?to?)
 
 tokenring:
 	$(CXX) tokenring.c $(CXXFLAGS) -o tokenring
 
 clean:
 	rm -rf tokenring
-	rm -rf $(Pipes)
+	rm -rf pipe*

@@ -12,22 +12,23 @@ char **pipes;
 
 int child(int processID, int blockProb, int sleepTime)
 {
-	
+
 	int token = -1;
 	srand(time(NULL) ^ getpid());
 	int fd = open(pipes[processID - 1], O_RDONLY);
 	int fw = open(pipes[processID], O_WRONLY);
 	while (1)
 	{
-		if(read(fd, &token, sizeof(int)) == -1){
+		if (read(fd, &token, sizeof(int)) == -1)
+		{
 			printf("p%d error while reading\n", processID);
 		}
 		int probability = rand() % 100;
-		if (probability <= blockProb*100)
+		if (probability <= blockProb * 100)
 		{
-			printf("[p%d] lock on token (val = %d)\n", processID, token);
+			printf("[p%d] Pid:%d lock on token (val = %d)\n", processID + 1, getpid(), token);
 			sleep(sleepTime);
-			printf("[p%d] unlock token\n", processID);
+			printf("[p%d] Pid:%d unlock token\n", processID + 1, getpid());
 		}
 		token++;
 		write(fw, &token, sizeof(int));
@@ -37,41 +38,30 @@ int child(int processID, int blockProb, int sleepTime)
 int main(int argc, char *argv[])
 {
 	srand(time(NULL) ^ getpid());
-	int numberProcesses = atoi(argv[1]) + 1; //lmao
+	int numberProcesses = atoi(argv[1]);
 	pipes = (char **)malloc(sizeof(char **) * numberProcesses);
 	int blockProb = atof(argv[2]);
 	unsigned sleepTime = atoi(argv[3]);
 	int token = 0;
 	pid_t pid;
 
-	for (int i = 0; i < numberProcesses - 1; i++)
+	for (int i = 0; i < numberProcesses; i++)
 	{
-		char * pipeName = (char *) malloc(20);
-		sprintf(pipeName, "pipe%dto%d", i + 1, i + 2);
+		char *pipeName = (char *)malloc(20);
+		sprintf(pipeName, "pipe%dto%d", i + 1, 1 + (i + 1) % numberProcesses);
 
 		if (mkfifo(pipeName, 0666) == -1)
 		{
 			printf("Unable to create a fifo; errno=%d\n", errno);
 			return EXIT_FAILURE;
 		}
-		else{
+		else
+		{
 			pipes[i] = pipeName;
 		}
 	}
 
-	char lastPipeName[25];
-	sprintf(lastPipeName, "pipe%dto%d", numberProcesses, 1);
-
-	if (mkfifo(lastPipeName, 0666) == -1)
-	{
-		printf("Unable to create a fifo; errno=%d\n", errno);
-		return EXIT_FAILURE;
-	}
-	else
-	{
-		pipes[numberProcesses - 1] = lastPipeName; // Adiciona o último pipe criado à lista de pipes
-	}
-	for (int i = 2; i <= numberProcesses; i++)
+	for (int i = 1; i < numberProcesses; i++)
 	{
 		if ((pid = fork()) < 0)
 		{
@@ -80,8 +70,9 @@ int main(int argc, char *argv[])
 		}
 		else if (pid == 0)
 		{
-			child(i-1, blockProb, sleepTime);
+			child(i, blockProb, sleepTime);
 		}
+		printf("Created child %d\n", pid);
 	}
 	int fw = open(pipes[0], O_WRONLY);
 	write(fw, &token, sizeof(int));
@@ -90,11 +81,11 @@ int main(int argc, char *argv[])
 	{
 		read(fd, &token, sizeof(int));
 		int probability = rand() % 100;
-		if (probability <= blockProb*100)
+		if (probability <= blockProb * 100)
 		{
-			printf("[p%d] lock on token (val = %d)\n", 1, token);
+			printf("[p%d] Pid:%d lock on token (val = %d)\n", 1, getpid(), token);
 			sleep(sleepTime);
-			printf("[p%d] unlock token\n", 1);
+			printf("[p%d] Pid:%d unlock token\n", 1, getpid());
 		}
 		token++;
 		write(fw, &token, sizeof(int));
