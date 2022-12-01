@@ -10,38 +10,22 @@
 
 char **pipes;
 
-int child(int processID, int blockProb, int sleepTime)
-{
-
-	int token = -1;
-	srand(time(NULL) ^ getpid());
-	int fd = open(pipes[processID - 1], O_RDONLY);
-	int fw = open(pipes[processID], O_WRONLY);
-	while (1)
-	{
-		if (read(fd, &token, sizeof(int)) == -1)
-		{
-			printf("p%d error while reading\n", processID);
-		}
-		int probability = rand() % 100;
-		if (probability <= blockProb * 100)
-		{
-			printf("[p%d] Pid:%d lock on token (val = %d)\n", processID + 1, getpid(), token);
-			sleep(sleepTime);
-			printf("[p%d] Pid:%d unlock token\n", processID + 1, getpid());
-		}
-		token++;
-		write(fw, &token, sizeof(int));
-	}
-}
-
 int main(int argc, char *argv[])
 {
-	srand(time(NULL) ^ getpid());
+	if (argc != 4)
+	{
+		printf("Insert the correct number of arguments. tokenring <number of processes> <blocking probability> <block time>\n");
+		return EXIT_FAILURE;
+	}
+
+	srand(time(NULL));
+
 	int numberProcesses = atoi(argv[1]);
-	pipes = (char **)malloc(sizeof(char **) * numberProcesses);
 	int blockProb = atof(argv[2]);
 	unsigned sleepTime = atoi(argv[3]);
+
+	pipes = (char **)malloc(sizeof(char *) * numberProcesses);
+
 	int token = 0;
 	pid_t pid;
 
@@ -52,7 +36,7 @@ int main(int argc, char *argv[])
 
 		if (mkfifo(pipeName, 0666) == -1)
 		{
-			printf("Unable to create a fifo; errno=%d\n", errno);
+			perror("Unable to create a FIFO");
 			return EXIT_FAILURE;
 		}
 		else
@@ -65,21 +49,63 @@ int main(int argc, char *argv[])
 	{
 		if ((pid = fork()) < 0)
 		{
-			perror("fork error");
-			exit(EXIT_FAILURE);
+			perror("Fork error");
+			return EXIT_FAILURE;
 		}
 		else if (pid == 0)
 		{
-			child(i, blockProb, sleepTime);
+			int fd = open(pipes[i - 1], O_RDONLY);
+			if (fd < 0)
+			{
+				perror("Error opening pipe");
+				return EXIT_FAILURE;
+			}
+
+			int fw = open(pipes[i], O_WRONLY);
+			if (fw < 0)
+			{
+				perror("Error opening pipe");
+				return EXIT_FAILURE;
+			}
+
+			while (1)
+			{
+				if ((read(fd, &token, sizeof(int)) != sizeof(token)))
+				{
+					perror("Read error");
+					return EXIT_FAILURE;
+				}
+				int probability = rand() % 100;
+				if (probability <= blockProb * 100)
+				{
+					printf("[p%d] Pid:%d lock on token (val = %d)\n", i + 1, getpid(), token);
+					sleep(sleepTime);
+					printf("[p%d] Pid:%d unlock token\n", i + 1, getpid());
+				}
+				token++;
+				if ((write(fw, &token, sizeof(int))) != sizeof(token))
+				{
+					perror("Write error");
+					return EXIT_FAILURE;
+				}
+			}
 		}
 		printf("Created child %d\n", pid);
 	}
 	int fw = open(pipes[0], O_WRONLY);
-	write(fw, &token, sizeof(int));
+	if (fw < 0)
+	{
+		perror("Error opening pipe");
+		return EXIT_FAILURE;
+	}
 	int fd = open(pipes[numberProcesses - 1], O_RDONLY);
+	if (fd < 0)
+	{
+		perror("Error opening pipe");
+		return EXIT_FAILURE;
+	}
 	while (1)
 	{
-		read(fd, &token, sizeof(int));
 		int probability = rand() % 100;
 		if (probability <= blockProb * 100)
 		{
@@ -88,7 +114,16 @@ int main(int argc, char *argv[])
 			printf("[p%d] Pid:%d unlock token\n", 1, getpid());
 		}
 		token++;
-		write(fw, &token, sizeof(int));
+		if ((write(fw, &token, sizeof(int))) != sizeof(token))
+		{
+			perror("Write error");
+			return EXIT_FAILURE;
+		}
+		if ((read(fd, &token, sizeof(int)) != sizeof(token)))
+		{
+			perror("Read error");
+			return EXIT_FAILURE;
+		}
 	}
 	return EXIT_SUCCESS;
 }

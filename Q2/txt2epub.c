@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 
         if ((pid = fork()) < 0)
         {
-            perror("fork error");
+            perror("Fork error");
             exit(EXIT_FAILURE);
         }
         else if (pid == 0)
