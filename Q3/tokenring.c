@@ -18,16 +18,16 @@ char **pipes;
 
 int main(int argc, char *argv[])
 {
-	if (argc != 4) // Confirma que o número de argumentos passados é o correcto, ou seja, se foi chamada a função e os seus 3 parâmetros 
+	if (argc != 4) // Confirma que o número de argumentos passados é o correcto, ou seja, se foi chamada a função e os seus 3 parâmetros
 	{
 		printf("Insert the correct number of arguments. tokenring <number of processes> <blocking probability> <block time>\n");
 		return EXIT_FAILURE;
 	}
 
-	srand(time(NULL));
+	srand(time(NULL) * getpid());
 
 	int numberProcesses = atoi(argv[1]);
-	int blockProb = atof(argv[2]);
+	float blockProb = atof(argv[2]);
 	unsigned sleepTime = atoi(argv[3]);
 
 	pipes = (char **)malloc(sizeof(char *) * numberProcesses); // Dá o tamanho
@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 	int token = 0;
 	pid_t pid;
 
-	for (int i = 0; i < numberProcesses; i++) // Cria os named pipes 
+	for (int i = 0; i < numberProcesses; i++) // Cria os named pipes
 	{
 		char *pipeName = (char *)malloc(20);
 		sprintf(pipeName, "pipe%dto%d", i + 1, 1 + (i + 1) % numberProcesses);
@@ -60,7 +60,9 @@ int main(int argc, char *argv[])
 		}
 		else if (pid == 0) // Processo child
 		{
-			int fd = open(pipes[i - 1], O_RDONLY); // Lê primeiro 
+			srand(time(NULL) * getpid());
+
+			int fd = open(pipes[i - 1], O_RDONLY); // Lê primeiro
 			if (fd < 0)
 			{
 				perror("Error opening pipe");
@@ -88,7 +90,7 @@ int main(int argc, char *argv[])
 					sleep(sleepTime);
 					printf("[p%d] Pid:%d unlock token\n", i + 1, getpid());
 				}
-				token++; 
+				token++;
 				if ((write(fw, &token, sizeof(int))) != sizeof(token))
 				{
 					perror("Write error");
@@ -113,7 +115,7 @@ int main(int argc, char *argv[])
 	while (1)
 	{
 		int probability = rand() % 100;
-		if (probability <= blockProb * 100) // Bloqueia o envio do token. A blockProb passa a ser um inteiro de 0 a 100 
+		if (probability <= blockProb * 100) // Bloqueia o envio do token. A blockProb passa a ser um inteiro de 0 a 100
 		{
 			printf("[p%d] Pid:%d lock on token (val = %d)\n", 1, getpid(), token);
 			sleep(sleepTime);
